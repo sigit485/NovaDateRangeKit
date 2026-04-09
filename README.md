@@ -1,4 +1,4 @@
-# CalendarDateRangePicker
+# NovaDateRangeKit
 
 A fully programmatic UIKit date-range picker component for iOS.
 
@@ -21,12 +21,25 @@ In Xcode:
 1. Open your app project.
 2. Go to **Package Dependencies**.
 3. Add this package repository URL.
-4. Add product `CalendarDateRangePicker` to your app target.
+4. Add product `NovaDateRangeKit` to your app target.
+
+## Installation (CocoaPods)
+Add this to your `Podfile`:
+
+```ruby
+pod 'NovaDateRangeKit', '~> 1.0'
+```
+
+Then run:
+
+```bash
+pod install
+```
 
 ## Usage
 ```swift
 import UIKit
-import CalendarDateRangePicker
+import NovaDateRangeKit
 
 final class ViewController: UIViewController, CalendarPickerDelegate {
     private let calendarView = CalendarView()

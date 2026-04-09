@@ -1,5 +1,5 @@
 import XCTest
-@testable import CalendarDateRangePicker
+@testable import NovaDateRangeKit
 
 final class CalendarViewModelTests: XCTestCase {
 

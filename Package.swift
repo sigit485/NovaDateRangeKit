@@ -2,25 +2,25 @@
 import PackageDescription
 
 let package = Package(
-    name: "CalendarDateRangePicker",
+    name: "NovaDateRangeKit",
     platforms: [
         .iOS(.v12)
     ],
     products: [
         .library(
-            name: "CalendarDateRangePicker",
-            targets: ["CalendarDateRangePicker"]
+            name: "NovaDateRangeKit",
+            targets: ["NovaDateRangeKit"]
         )
     ],
     targets: [
         .target(
-            name: "CalendarDateRangePicker",
-            path: "Sources/CalendarDateRangePicker"
+            name: "NovaDateRangeKit",
+            path: "Sources/NovaDateRangeKit"
         ),
         .testTarget(
-            name: "CalendarDateRangePickerTests",
-            dependencies: ["CalendarDateRangePicker"],
-            path: "Tests/CalendarDateRangePickerTests"
+            name: "NovaDateRangeKitTests",
+            dependencies: ["NovaDateRangeKit"],
+            path: "Tests/NovaDateRangeKitTests"
         )
     ]
 )
