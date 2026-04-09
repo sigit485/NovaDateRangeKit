@@ -255,14 +255,32 @@ public final class NovaCalendarView: UIView {
             }
         }
 
+        if #available(iOS 13.0, *),
+           let diffableDataSource = modernDataSource as? UICollectionViewDiffableDataSource<Section, DayItem> {
+            var snapshot = diffableDataSource.snapshot()
+            let currentItems = Set(snapshot.itemIdentifiers)
+            let itemsToReload = days.compactMap { day -> DayItem? in
+                guard let date = day.date, affectedDates.contains(date) else {
+                    return nil
+                }
+                let item = DayItem(id: day.id)
+                return currentItems.contains(item) ? item : nil
+            }
+
+            guard !itemsToReload.isEmpty else {
+                return
+            }
+
+            snapshot.reloadItems(itemsToReload)
+            diffableDataSource.apply(snapshot, animatingDifferences: false)
+            return
+        }
+
         let indexPaths = days.enumerated().compactMap { index, day -> IndexPath? in
-            guard let date = day.date else {
+            guard let date = day.date, affectedDates.contains(date) else {
                 return nil
             }
-            if affectedDates.contains(date) {
-                return IndexPath(item: index, section: 0)
-            }
-            return nil
+            return IndexPath(item: index, section: 0)
         }
 
         guard !indexPaths.isEmpty else {
