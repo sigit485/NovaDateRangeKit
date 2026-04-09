@@ -27,8 +27,8 @@ final class ViewController: UIViewController {
         return label
     }()
 
-    private let calendarView: CalendarView = {
-        let view = CalendarView()
+    private let calendarView: NovaCalendarView = {
+        let view = NovaCalendarView()
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
@@ -75,13 +75,13 @@ final class ViewController: UIViewController {
 // MARK: - CalendarPickerDelegate
 
 extension ViewController: CalendarPickerDelegate {
-    func calendarPicker(_ picker: CalendarView, didSelectRange range: DateRange) {
+    func calendarPicker(_ picker: NovaCalendarView, didSelectRange range: DateRange) {
         let start = dateFormatter.string(from: range.startDate)
         let end = dateFormatter.string(from: range.endDate)
         selectedRangeLabel.text = "Range: \(start) - \(end)"
     }
 
-    func calendarPicker(_ picker: CalendarView, didSelectStartDate date: Date) {
+    func calendarPicker(_ picker: NovaCalendarView, didSelectStartDate date: Date) {
         let start = dateFormatter.string(from: date)
         selectedRangeLabel.text = "Start date: \(start)"
     }

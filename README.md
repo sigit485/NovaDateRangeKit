@@ -43,7 +43,7 @@ import UIKit
 import NovaDateRangeKit
 
 final class ViewController: UIViewController, CalendarPickerDelegate {
-    private let calendarView = CalendarView()
+    private let calendarView = NovaCalendarView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -63,11 +63,11 @@ final class ViewController: UIViewController, CalendarPickerDelegate {
         ])
     }
 
-    func calendarPicker(_ picker: CalendarView, didSelectRange range: DateRange) {
+    func calendarPicker(_ picker: NovaCalendarView, didSelectRange range: DateRange) {
         print("Range: \(range.startDate) - \(range.endDate)")
     }
 
-    func calendarPicker(_ picker: CalendarView, didSelectStartDate date: Date) {
+    func calendarPicker(_ picker: NovaCalendarView, didSelectStartDate date: Date) {
         print("Start date: \(date)")
     }
 }

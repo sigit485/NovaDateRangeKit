@@ -25,7 +25,7 @@ public final class CalendarPickerViewController: UIViewController {
 
     // MARK: - Views
 
-    private let calendarView = CalendarView()
+    private let calendarView = NovaCalendarView()
 
     // MARK: - Lifecycle
 

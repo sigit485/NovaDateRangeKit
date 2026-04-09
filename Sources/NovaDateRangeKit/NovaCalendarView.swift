@@ -1,11 +1,11 @@
 import UIKit
 
 public protocol CalendarPickerDelegate: AnyObject {
-    func calendarPicker(_ picker: CalendarView, didSelectRange range: DateRange)
-    func calendarPicker(_ picker: CalendarView, didSelectStartDate date: Date)
+    func calendarPicker(_ picker: NovaCalendarView, didSelectRange range: DateRange)
+    func calendarPicker(_ picker: NovaCalendarView, didSelectStartDate date: Date)
 }
 
-public final class CalendarView: UIView {
+public final class NovaCalendarView: UIView {
 
     // MARK: - Constants
 
@@ -319,7 +319,7 @@ public final class CalendarView: UIView {
 
 // MARK: - UICollectionViewDataSource (iOS 12 fallback)
 
-extension CalendarView: UICollectionViewDataSource {
+extension NovaCalendarView: UICollectionViewDataSource {
     public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return days.count
     }
@@ -341,7 +341,7 @@ extension CalendarView: UICollectionViewDataSource {
 
 // MARK: - UICollectionViewDelegate
 
-extension CalendarView: UICollectionViewDelegate {
+extension NovaCalendarView: UICollectionViewDelegate {
     public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard days.indices.contains(indexPath.item),
               let date = days[indexPath.item].date else {
@@ -373,3 +373,6 @@ extension CalendarView: UICollectionViewDelegate {
         }
     }
 }
+
+@available(*, deprecated, renamed: "NovaCalendarView")
+public typealias CalendarView = NovaCalendarView
