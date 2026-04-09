@@ -9,6 +9,10 @@ final class WeekdayHeaderView: UIView {
         static let fontSize: CGFloat = 13
     }
 
+    // MARK: - Views
+
+    private var weekdayLabels: [UILabel] = []
+
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -37,6 +41,7 @@ final class WeekdayHeaderView: UIView {
             label.textAlignment = .center
             label.font = .systemFont(ofSize: Constants.fontSize, weight: .semibold)
             label.textColor = .calendarSecondaryText
+            weekdayLabels.append(label)
             stackView.addArrangedSubview(label)
         }
 
@@ -48,5 +53,11 @@ final class WeekdayHeaderView: UIView {
             stackView.topAnchor.constraint(equalTo: topAnchor),
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+    }
+
+    // MARK: - Public
+
+    func setWeekdayFont(_ font: UIFont) {
+        weekdayLabels.forEach { $0.font = font }
     }
 }

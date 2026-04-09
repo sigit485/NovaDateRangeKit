@@ -1,0 +1,102 @@
+import UIKit
+import NovaDateRangeKit
+
+final class ViewController: UIViewController {
+
+    // MARK: - Constants
+
+    private enum Constants {
+        static let labelFontSize: CGFloat = 15
+        static let sidePadding: CGFloat = 20
+        static let calendarSidePadding: CGFloat = 12
+        static let topPadding: CGFloat = 20
+        static let verticalSpacing: CGFloat = 14
+        static let calendarHeightRatio: CGFloat = 1.08
+    }
+
+    // MARK: - Views
+
+    private let selectedRangeLabel: UILabel = {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.font = .systemFont(ofSize: Constants.labelFontSize, weight: .medium)
+        label.textColor = .darkGray
+        label.numberOfLines = 0
+        label.textAlignment = .center
+        label.text = "Select a date range"
+        return label
+    }()
+
+    private let calendarView: NovaCalendarView = {
+        let view = NovaCalendarView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.calendar = Calendar.current
+        formatter.locale = Locale.current
+        formatter.dateFormat = "dd MMM yyyy"
+        return formatter
+    }()
+
+    // MARK: - Lifecycle
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        title = "NovaDateRangeKit Demo"
+        setupView()
+    }
+
+    // MARK: - Setup
+
+    private func setupView() {
+        view.backgroundColor = .white
+
+        view.addSubview(selectedRangeLabel)
+        view.addSubview(calendarView)
+
+        calendarView.delegate = self
+        calendarView.minDate = Calendar.current.startOfDay(for: Date())
+        calendarView.setFonts(
+            monthTitleFont: .systemFont(ofSize: 28, weight: .bold),
+            weekdayFont: .systemFont(ofSize: 11, weight: .semibold),
+            dayFont: .systemFont(ofSize: 16, weight: .regular),
+            selectedDayFont: .systemFont(ofSize: 16, weight: .bold),
+            inRangeDayFont: .systemFont(ofSize: 16, weight: .bold),
+            todayDayFont: .systemFont(ofSize: 16, weight: .semibold),
+            disabledDayFont: .systemFont(ofSize: 16, weight: .regular)
+        )
+
+        NSLayoutConstraint.activate([
+            selectedRangeLabel.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: Constants.topPadding),
+            selectedRangeLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: Constants.sidePadding),
+            selectedRangeLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -Constants.sidePadding),
+
+            calendarView.topAnchor.constraint(equalTo: selectedRangeLabel.bottomAnchor, constant: Constants.verticalSpacing),
+            calendarView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: Constants.calendarSidePadding),
+            calendarView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -Constants.calendarSidePadding),
+            calendarView.heightAnchor.constraint(equalTo: calendarView.widthAnchor, multiplier: Constants.calendarHeightRatio)
+        ])
+    }
+}
+
+// MARK: - CalendarPickerDelegate
+
+extension ViewController: CalendarPickerDelegate {
+    func calendarPicker(_ picker: NovaCalendarView, didSelectRange range: DateRange) {
+        let start = dateFormatter.string(from: range.startDate)
+        let end = dateFormatter.string(from: range.endDate)
+        selectedRangeLabel.text = "Range: \(start) - \(end)"
+    }
+
+    func calendarPicker(_ picker: NovaCalendarView, didSelectStartDate date: Date) {
+        let start = dateFormatter.string(from: date)
+        selectedRangeLabel.text = "Start date: \(start)"
+    }
+
+    func calendarPickerDidResetSelection(_ picker: NovaCalendarView) {
+        selectedRangeLabel.text = "Select a date range"
+    }
+}

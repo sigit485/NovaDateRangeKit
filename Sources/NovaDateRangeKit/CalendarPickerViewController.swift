@@ -23,6 +23,19 @@ public final class CalendarPickerViewController: UIViewController {
         }
     }
 
+    public var fontConfiguration: NovaCalendarFontConfiguration {
+        get {
+            return calendarView.fontConfiguration
+        }
+        set {
+            calendarView.fontConfiguration = newValue
+        }
+    }
+
+    public func setFonts(_ configuration: NovaCalendarFontConfiguration) {
+        calendarView.setFonts(configuration)
+    }
+
     // MARK: - Views
 
     private let calendarView = NovaCalendarView()
@@ -49,6 +62,7 @@ public final class CalendarPickerViewController: UIViewController {
         view.backgroundColor = .white
         calendarView.delegate = delegate
         calendarView.minDate = minDate ?? Calendar.current.startOfDay(for: Date())
+        calendarView.fontConfiguration = fontConfiguration
 
         view.addSubview(calendarView)
         NSLayoutConstraint.activate([

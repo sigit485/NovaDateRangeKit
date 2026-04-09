@@ -18,4 +18,5 @@ and min-date constraints.
   s.requires_arc     = true
 
   s.source_files     = 'Sources/NovaDateRangeKit/**/*.swift'
+  s.resources        = 'Sources/NovaDateRangeKit/Resources/**/*'
 end

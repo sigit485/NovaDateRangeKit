@@ -8,6 +8,7 @@ final class CalendarHeaderView: UIView {
         static let horizontalPadding: CGFloat = 12
         static let buttonSize: CGFloat = 32
         static let titleFontSize: CGFloat = 20
+        static let iconInsets = UIEdgeInsets(top: 6, left: 6, bottom: 6, right: 6)
     }
 
     // MARK: - Callbacks
@@ -19,8 +20,6 @@ final class CalendarHeaderView: UIView {
 
     private let previousButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("<", for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         button.tintColor = .calendarPrimaryText
         button.accessibilityLabel = "Previous Month"
         return button
@@ -28,8 +27,6 @@ final class CalendarHeaderView: UIView {
 
     private let nextButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle(">", for: .normal)
-        button.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
         button.tintColor = .calendarPrimaryText
         button.accessibilityLabel = "Next Month"
         return button
@@ -60,10 +57,15 @@ final class CalendarHeaderView: UIView {
         titleLabel.text = title
     }
 
+    func setTitleFont(_ font: UIFont) {
+        titleLabel.font = font
+    }
+
     // MARK: - Setup
 
     private func setupView() {
         translatesAutoresizingMaskIntoConstraints = false
+        configureNavigationButtons()
 
         [previousButton, titleLabel, nextButton].forEach {
             $0.translatesAutoresizingMaskIntoConstraints = false
@@ -89,6 +91,55 @@ final class CalendarHeaderView: UIView {
             titleLabel.leadingAnchor.constraint(greaterThanOrEqualTo: previousButton.trailingAnchor, constant: 8),
             titleLabel.trailingAnchor.constraint(lessThanOrEqualTo: nextButton.leadingAnchor, constant: -8)
         ])
+    }
+
+    private func configureNavigationButtons() {
+        let backImage = CalendarHeaderView.loadBackIcon()?.withRenderingMode(.alwaysTemplate)
+        previousButton.contentEdgeInsets = Constants.iconInsets
+        nextButton.contentEdgeInsets = Constants.iconInsets
+
+        if let backImage {
+            previousButton.setImage(backImage, for: .normal)
+            previousButton.setTitle(nil, for: .normal)
+
+            nextButton.setImage(backImage, for: .normal)
+            nextButton.setTitle(nil, for: .normal)
+            nextButton.imageView?.transform = CGAffineTransform(scaleX: -1, y: 1)
+            return
+        }
+
+        previousButton.setTitle("<", for: .normal)
+        previousButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+        nextButton.setTitle(">", for: .normal)
+        nextButton.titleLabel?.font = .systemFont(ofSize: 18, weight: .semibold)
+    }
+
+    private static func loadBackIcon() -> UIImage? {
+        let bundle = resourceBundle
+        return UIImage(named: "icons8-back", in: bundle, compatibleWith: nil)
+    }
+
+    private static var resourceBundle: Bundle {
+        #if SWIFT_PACKAGE
+        return .module
+        #else
+        let classBundle = Bundle(for: CalendarHeaderView.self)
+        if classBundle.path(forResource: "icons8-back", ofType: "png") != nil {
+            return classBundle
+        }
+        if let bundleURL = classBundle.url(forResource: "NovaDateRangeKit", withExtension: "bundle"),
+           let podBundle = Bundle(url: bundleURL) {
+            return podBundle
+        }
+        if Bundle.main.path(forResource: "icons8-back", ofType: "png") != nil {
+            return Bundle.main
+        }
+        if let bundleURL = Bundle.main.url(forResource: "NovaDateRangeKit", withExtension: "bundle"),
+           let podBundle = Bundle(url: bundleURL) {
+            return podBundle
+        }
+        return classBundle
+        #endif
     }
 
     // MARK: - Actions

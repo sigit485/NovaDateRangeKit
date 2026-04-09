@@ -17,20 +17,40 @@ final class CalendarDayCell: UICollectionViewCell {
         static let labelFontSize: CGFloat = 16
         static let horizontalInset: CGFloat = 1
         static let verticalInset: CGFloat = 4
+        static let rangeHorizontalInset: CGFloat = 0
         static let minimumCircleInset: CGFloat = 6
         static let circleInsetRatio: CGFloat = 0.16
-        static let rangeHeightRatio: CGFloat = 0.62
+        static let rangeHeightRatio: CGFloat = 1.0
+        static let connectedRangeOverlap: CGFloat = 2
+        static let boundaryConnectorUnderlap: CGFloat = 8
         static let outlineLineWidth: CGFloat = 1
-        static let badgeRadiusRatio: CGFloat = 0.16
-        static let badgeTipLeftXRatio: CGFloat = 0.45
-        static let badgeTipLeftYRatio: CGFloat = 0.72
-        static let badgeTipXRatio: CGFloat = 0.05
-        static let badgeTipYRatio: CGFloat = 1.75
-        static let badgeTipRightXRatio: CGFloat = 0.35
-        static let badgeTipRightYRatio: CGFloat = 0.66
+        static let badgeDiameterRatio: CGFloat = 0.34
+        static let badgeMinimumDiameter: CGFloat = 7
+        static let badgeMaximumDiameter: CGFloat = 8.5
+        static let badgeHorizontalInset: CGFloat = 1
+        static let badgeVerticalInset: CGFloat = 0.5
+        static let badgeStrokeWidth: CGFloat = 1
     }
 
     static let reuseIdentifier = "CalendarDayCell"
+
+    // MARK: - Fonts
+
+    struct FontConfiguration {
+        let normal: UIFont
+        let selected: UIFont
+        let inRange: UIFont
+        let today: UIFont
+        let disabled: UIFont
+
+        static let `default` = FontConfiguration(
+            normal: .systemFont(ofSize: Constants.labelFontSize, weight: .regular),
+            selected: .systemFont(ofSize: Constants.labelFontSize, weight: .bold),
+            inRange: .systemFont(ofSize: Constants.labelFontSize, weight: .bold),
+            today: .systemFont(ofSize: Constants.labelFontSize, weight: .semibold),
+            disabled: .systemFont(ofSize: Constants.labelFontSize, weight: .regular)
+        )
+    }
 
     // MARK: - Views
 
@@ -52,6 +72,7 @@ final class CalendarDayCell: UICollectionViewCell {
     private var dayText: String?
     private var connectsLeft = false
     private var connectsRight = false
+    private var fontConfiguration = FontConfiguration.default
 
     // MARK: - Init
 
@@ -93,6 +114,11 @@ final class CalendarDayCell: UICollectionViewCell {
         setNeedsLayout()
     }
 
+    func setFonts(_ fontConfiguration: FontConfiguration) {
+        self.fontConfiguration = fontConfiguration
+        setNeedsLayout()
+    }
+
     // MARK: - Setup
 
     private func setupCell() {
@@ -100,9 +126,18 @@ final class CalendarDayCell: UICollectionViewCell {
         clipsToBounds = false
 
         rangeLayer.fillColor = UIColor.clear.cgColor
+        rangeLayer.contentsScale = UIScreen.main.scale
+        rangeLayer.allowsEdgeAntialiasing = false
         selectionCircleLayer.fillColor = UIColor.clear.cgColor
+        selectionCircleLayer.contentsScale = UIScreen.main.scale
         todayBadgeLayer.fillColor = UIColor.clear.cgColor
+        todayBadgeLayer.strokeColor = UIColor.clear.cgColor
+        todayBadgeLayer.lineWidth = Constants.badgeStrokeWidth
+        todayBadgeLayer.lineJoin = .round
+        todayBadgeLayer.lineCap = .round
+        todayBadgeLayer.contentsScale = UIScreen.main.scale
 
+        // Range highlight should stay behind selected circles.
         contentView.layer.addSublayer(rangeLayer)
         contentView.layer.addSublayer(selectionCircleLayer)
         contentView.layer.addSublayer(todayBadgeLayer)
@@ -131,17 +166,35 @@ final class CalendarDayCell: UICollectionViewCell {
         selectionCircleLayer.strokeColor = UIColor.clear.cgColor
         todayBadgeLayer.path = nil
         todayBadgeLayer.fillColor = UIColor.clear.cgColor
+        todayBadgeLayer.strokeColor = UIColor.clear.cgColor
 
         let contentRect = bounds.insetBy(dx: Constants.horizontalInset, dy: Constants.verticalInset)
+        let circleBase = min(contentRect.width, contentRect.height)
         let circleInset = max(Constants.minimumCircleInset,
-                              floor(contentRect.width * Constants.circleInsetRatio))
-        let circleRect = contentRect.insetBy(dx: circleInset, dy: circleInset)
-        let circleRadius = min(circleRect.width, circleRect.height) / 2
-        let rangeHeight = circleRect.height * Constants.rangeHeightRatio
-        let rangeRect = CGRect(x: contentRect.minX,
-                               y: contentRect.midY - (rangeHeight / 2),
-                               width: contentRect.width,
-                               height: rangeHeight)
+                              floor(circleBase * Constants.circleInsetRatio))
+        let circleSide = max(0, circleBase - (circleInset * 2))
+        let circleRect = CGRect(x: contentRect.midX - (circleSide / 2),
+                                y: contentRect.midY - (circleSide / 2),
+                                width: circleSide,
+                                height: circleSide)
+        let pixelAlignedCircleRect = alignedToPixel(circleRect)
+        let circleRadius = min(pixelAlignedCircleRect.width, pixelAlignedCircleRect.height) / 2
+        let rangeHeight = pixelAlignedCircleRect.height * Constants.rangeHeightRatio
+        // Keep range highlight flush to cell edges so adjacent in-range cells connect seamlessly.
+        let baseRangeRect = CGRect(x: bounds.minX + Constants.rangeHorizontalInset,
+                                   y: contentRect.midY - (rangeHeight / 2),
+                                   width: bounds.width - (Constants.rangeHorizontalInset * 2),
+                                   height: rangeHeight)
+
+        var connectedRangeRect = baseRangeRect
+        if connectsLeft {
+            connectedRangeRect.origin.x -= Constants.connectedRangeOverlap
+            connectedRangeRect.size.width += Constants.connectedRangeOverlap
+        }
+        if connectsRight {
+            connectedRangeRect.size.width += Constants.connectedRangeOverlap
+        }
+        let pixelAlignedRangeRect = alignedToPixel(connectedRangeRect)
 
         switch dayState {
         case .empty:
@@ -149,62 +202,58 @@ final class CalendarDayCell: UICollectionViewCell {
             isUserInteractionEnabled = false
 
         case .disabled:
-            dayLabel.font = .systemFont(ofSize: Constants.labelFontSize, weight: .regular)
+            dayLabel.font = fontConfiguration.disabled
             dayLabel.textColor = .calendarDisabledText
             isUserInteractionEnabled = false
 
         case .normal:
-            dayLabel.font = .systemFont(ofSize: Constants.labelFontSize, weight: .regular)
+            dayLabel.font = fontConfiguration.normal
             dayLabel.textColor = .calendarNormalDayText
             isUserInteractionEnabled = true
 
         case .today:
-            dayLabel.font = .systemFont(ofSize: Constants.labelFontSize, weight: .semibold)
+            dayLabel.font = fontConfiguration.today
             dayLabel.textColor = .calendarPrimaryText
-            selectionCircleLayer.path = UIBezierPath(ovalIn: circleRect).cgPath
+            selectionCircleLayer.path = nil
             selectionCircleLayer.fillColor = UIColor.clear.cgColor
-            selectionCircleLayer.strokeColor = UIColor.calendarOutline.cgColor
-            selectionCircleLayer.lineWidth = Constants.outlineLineWidth
-            todayBadgeLayer.path = makeTodayBadgePath(anchoredTo: circleRect).cgPath
+            selectionCircleLayer.strokeColor = UIColor.clear.cgColor
+            todayBadgeLayer.path = makeTodayBadgePath(anchoredTo: pixelAlignedCircleRect).cgPath
             todayBadgeLayer.fillColor = UIColor.calendarTodayBlue.cgColor
+            todayBadgeLayer.strokeColor = UIColor.clear.cgColor
             isUserInteractionEnabled = true
 
         case let .selected(isStart):
-            dayLabel.font = .systemFont(ofSize: Constants.labelFontSize, weight: .bold)
+            dayLabel.font = fontConfiguration.selected
             dayLabel.textColor = .white
-            selectionCircleLayer.path = UIBezierPath(ovalIn: circleRect).cgPath
+            selectionCircleLayer.path = UIBezierPath(ovalIn: pixelAlignedCircleRect).cgPath
             selectionCircleLayer.fillColor = UIColor.calendarOrange.cgColor
 
             // When range spans beyond the selected boundary date, draw half-pill to connect rows.
             if isStart, connectsRight {
-                let halfRect = CGRect(x: rangeRect.midX,
-                                      y: rangeRect.minY,
-                                      width: rangeRect.width / 2,
-                                      height: rangeRect.height)
-                let halfPath = UIBezierPath(roundedRect: halfRect,
-                                            byRoundingCorners: [.topRight, .bottomRight],
-                                            cornerRadii: CGSize(width: halfRect.height / 2,
-                                                                height: halfRect.height / 2))
-                rangeLayer.path = halfPath.cgPath
+                let connectorStartX = pixelAlignedCircleRect.maxX - Constants.boundaryConnectorUnderlap
+                let halfRect = CGRect(x: connectorStartX,
+                                      y: baseRangeRect.minY,
+                                      width: max(0, baseRangeRect.maxX - connectorStartX),
+                                      height: baseRangeRect.height)
+                // Keep connector edge straight so selected boundary doesn't show a rounded nub.
+                rangeLayer.path = UIBezierPath(rect: alignedToPixel(halfRect)).cgPath
                 rangeLayer.fillColor = UIColor.calendarRangeBackground.cgColor
             } else if !isStart, connectsLeft {
-                let halfRect = CGRect(x: rangeRect.minX,
-                                      y: rangeRect.minY,
-                                      width: rangeRect.width / 2,
-                                      height: rangeRect.height)
-                let halfPath = UIBezierPath(roundedRect: halfRect,
-                                            byRoundingCorners: [.topLeft, .bottomLeft],
-                                            cornerRadii: CGSize(width: halfRect.height / 2,
-                                                                height: halfRect.height / 2))
-                rangeLayer.path = halfPath.cgPath
+                let connectorEndX = pixelAlignedCircleRect.minX + Constants.boundaryConnectorUnderlap
+                let halfRect = CGRect(x: baseRangeRect.minX,
+                                      y: baseRangeRect.minY,
+                                      width: max(0, connectorEndX - baseRangeRect.minX),
+                                      height: baseRangeRect.height)
+                // Keep connector edge straight so selected boundary doesn't show a rounded nub.
+                rangeLayer.path = UIBezierPath(rect: alignedToPixel(halfRect)).cgPath
                 rangeLayer.fillColor = UIColor.calendarRangeBackground.cgColor
             }
             isUserInteractionEnabled = true
 
         case let .inRange(isStart, isEnd):
-            dayLabel.font = .systemFont(ofSize: Constants.labelFontSize, weight: .bold)
+            dayLabel.font = fontConfiguration.inRange
             dayLabel.textColor = .calendarOrange
-            rangeLayer.path = makeRangePath(rect: rangeRect, isStart: isStart, isEnd: isEnd).cgPath
+            rangeLayer.path = makeRangePath(rect: pixelAlignedRangeRect, isStart: isStart, isEnd: isEnd).cgPath
             rangeLayer.fillColor = UIColor.calendarRangeBackground.cgColor
             isUserInteractionEnabled = true
         }
@@ -235,27 +284,25 @@ final class CalendarDayCell: UICollectionViewCell {
     }
 
     private func makeTodayBadgePath(anchoredTo circleRect: CGRect) -> UIBezierPath {
-        let radius = circleRect.width * Constants.badgeRadiusRatio
-        let center = CGPoint(x: circleRect.maxX - radius, y: circleRect.minY + radius)
+        let unclampedDiameter = circleRect.width * Constants.badgeDiameterRatio
+        let diameter = min(Constants.badgeMaximumDiameter,
+                           max(Constants.badgeMinimumDiameter, unclampedDiameter))
+        let badgeRect = alignedToPixel(CGRect(x: circleRect.maxX - diameter - Constants.badgeHorizontalInset,
+                                              y: circleRect.minY + Constants.badgeVerticalInset,
+                                              width: diameter,
+                                              height: diameter))
+        return UIBezierPath(ovalIn: badgeRect)
+    }
 
-        let bubblePath = UIBezierPath(arcCenter: center,
-                                      radius: radius,
-                                      startAngle: 0,
-                                      endAngle: .pi * 2,
-                                      clockwise: true)
-
-        let tipLeft = CGPoint(x: center.x - radius * Constants.badgeTipLeftXRatio,
-                              y: center.y + radius * Constants.badgeTipLeftYRatio)
-        let tip = CGPoint(x: center.x - radius * Constants.badgeTipXRatio,
-                          y: center.y + radius * Constants.badgeTipYRatio)
-        let tipRight = CGPoint(x: center.x + radius * Constants.badgeTipRightXRatio,
-                               y: center.y + radius * Constants.badgeTipRightYRatio)
-
-        bubblePath.move(to: tipLeft)
-        bubblePath.addLine(to: tip)
-        bubblePath.addLine(to: tipRight)
-        bubblePath.close()
-
-        return bubblePath
+    private func alignedToPixel(_ rect: CGRect) -> CGRect {
+        let scale = UIScreen.main.scale
+        let minX = floor(rect.minX * scale) / scale
+        let minY = floor(rect.minY * scale) / scale
+        let maxX = ceil(rect.maxX * scale) / scale
+        let maxY = ceil(rect.maxY * scale) / scale
+        return CGRect(x: minX,
+                      y: minY,
+                      width: max(0, maxX - minX),
+                      height: max(0, maxY - minY))
     }
 }

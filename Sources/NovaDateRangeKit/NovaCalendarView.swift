@@ -3,6 +3,11 @@ import UIKit
 public protocol CalendarPickerDelegate: AnyObject {
     func calendarPicker(_ picker: NovaCalendarView, didSelectRange range: DateRange)
     func calendarPicker(_ picker: NovaCalendarView, didSelectStartDate date: Date)
+    func calendarPickerDidResetSelection(_ picker: NovaCalendarView)
+}
+
+public extension CalendarPickerDelegate {
+    func calendarPickerDidResetSelection(_ picker: NovaCalendarView) {}
 }
 
 public final class NovaCalendarView: UIView {
@@ -38,6 +43,13 @@ public final class NovaCalendarView: UIView {
         }
     }
 
+    public var fontConfiguration: NovaCalendarFontConfiguration = .default {
+        didSet {
+            applyFontConfiguration()
+            reloadAllDays()
+        }
+    }
+
     // MARK: - Views
 
     private let headerView = CalendarHeaderView()
@@ -50,6 +62,7 @@ public final class NovaCalendarView: UIView {
     private var days: [CalendarDay] = []
     private var dayLookupByID: [Int: CalendarDay] = [:]
     private var modernDataSource: UICollectionViewDataSource?
+    private var monthIdentifier: Int = 0
 
     // MARK: - Init
 
@@ -82,6 +95,44 @@ public final class NovaCalendarView: UIView {
         return nil
     }
 
+    // MARK: - Public API
+
+    public func setFonts(_ configuration: NovaCalendarFontConfiguration) {
+        fontConfiguration = configuration
+    }
+
+    public func setFonts(monthTitleFont: UIFont? = nil,
+                         weekdayFont: UIFont? = nil,
+                         dayFont: UIFont? = nil,
+                         selectedDayFont: UIFont? = nil,
+                         inRangeDayFont: UIFont? = nil,
+                         todayDayFont: UIFont? = nil,
+                         disabledDayFont: UIFont? = nil) {
+        var updatedConfiguration = fontConfiguration
+        if let monthTitleFont {
+            updatedConfiguration.monthTitleFont = monthTitleFont
+        }
+        if let weekdayFont {
+            updatedConfiguration.weekdayFont = weekdayFont
+        }
+        if let dayFont {
+            updatedConfiguration.dayFont = dayFont
+        }
+        if let selectedDayFont {
+            updatedConfiguration.selectedDayFont = selectedDayFont
+        }
+        if let inRangeDayFont {
+            updatedConfiguration.inRangeDayFont = inRangeDayFont
+        }
+        if let todayDayFont {
+            updatedConfiguration.todayDayFont = todayDayFont
+        }
+        if let disabledDayFont {
+            updatedConfiguration.disabledDayFont = disabledDayFont
+        }
+        fontConfiguration = updatedConfiguration
+    }
+
     // MARK: - Setup
 
     private func setupView() {
@@ -111,6 +162,8 @@ public final class NovaCalendarView: UIView {
             calendarCollectionView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -Constants.horizontalPadding),
             calendarCollectionView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+
+        applyFontConfiguration()
     }
 
     private func setupActions() {
@@ -173,13 +226,14 @@ public final class NovaCalendarView: UIView {
     private func reloadMonth() {
         headerView.update(title: viewModel.monthTitle())
         days = viewModel.makeDaysForDisplayedMonth()
-        dayLookupByID = Dictionary(uniqueKeysWithValues: days.map { ($0.id, $0) })
+        monthIdentifier = viewModel.displayedMonthIdentifier()
+        dayLookupByID = Dictionary(uniqueKeysWithValues: days.map { (makeDayIdentifier(dayID: $0.id), $0) })
 
         if #available(iOS 13.0, *),
            let diffableDataSource = modernDataSource as? UICollectionViewDiffableDataSource<Section, DayItem> {
             var snapshot = NSDiffableDataSourceSnapshot<Section, DayItem>()
             snapshot.appendSections([.main])
-            snapshot.appendItems(days.map { DayItem(id: $0.id) }, toSection: .main)
+            snapshot.appendItems(days.map { DayItem(id: makeDayIdentifier(dayID: $0.id)) }, toSection: .main)
             diffableDataSource.apply(snapshot, animatingDifferences: false)
         } else {
             calendarCollectionView.reloadData()
@@ -187,6 +241,16 @@ public final class NovaCalendarView: UIView {
     }
 
     private func configure(cell: CalendarDayCell, for day: CalendarDay, at index: Int) {
+        cell.setFonts(
+            CalendarDayCell.FontConfiguration(
+                normal: fontConfiguration.dayFont,
+                selected: fontConfiguration.selectedDayFont,
+                inRange: fontConfiguration.inRangeDayFont,
+                today: fontConfiguration.todayDayFont,
+                disabled: fontConfiguration.disabledDayFont
+            )
+        )
+
         guard let date = day.date else {
             cell.configure(dayText: nil,
                            state: .empty,
@@ -204,6 +268,27 @@ public final class NovaCalendarView: UIView {
                        state: state,
                        connectsLeft: leftConnected,
                        connectsRight: rightConnected)
+    }
+
+    private func applyFontConfiguration() {
+        headerView.setTitleFont(fontConfiguration.monthTitleFont)
+        weekdayHeaderView.setWeekdayFont(fontConfiguration.weekdayFont)
+    }
+
+    private func reloadAllDays() {
+        if #available(iOS 13.0, *),
+           let diffableDataSource = modernDataSource as? UICollectionViewDiffableDataSource<Section, DayItem> {
+            var snapshot = diffableDataSource.snapshot()
+            let allItems = snapshot.itemIdentifiers
+            guard !allItems.isEmpty else {
+                return
+            }
+            snapshot.reloadItems(allItems)
+            diffableDataSource.apply(snapshot, animatingDifferences: false)
+            return
+        }
+
+        calendarCollectionView.reloadData()
     }
 
     private func resolveState(for date: Date, at index: Int) -> DayState {
@@ -263,7 +348,7 @@ public final class NovaCalendarView: UIView {
                 guard let date = day.date, affectedDates.contains(date) else {
                     return nil
                 }
-                let item = DayItem(id: day.id)
+                let item = DayItem(id: makeDayIdentifier(dayID: day.id))
                 return currentItems.contains(item) ? item : nil
             }
 
@@ -288,6 +373,10 @@ public final class NovaCalendarView: UIView {
         }
 
         calendarCollectionView.reloadItems(at: indexPaths)
+    }
+
+    private func makeDayIdentifier(dayID: Int) -> Int {
+        return (monthIdentifier * 100) + dayID
     }
 
     // MARK: - Month Navigation
@@ -384,6 +473,7 @@ extension NovaCalendarView: UICollectionViewDelegate {
             reloadSelectionDiff(oldDates: oldDates, newDates: newDates)
 
         case .didReset:
+            delegate?.calendarPickerDidResetSelection(self)
             reloadSelectionDiff(oldDates: oldDates, newDates: newDates)
 
         case .none:

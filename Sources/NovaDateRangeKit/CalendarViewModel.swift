@@ -51,6 +51,13 @@ final class CalendarViewModel {
         return titleFormatter.string(from: displayedMonth)
     }
 
+    func displayedMonthIdentifier() -> Int {
+        let components = calendar.dateComponents([.year, .month], from: displayedMonth)
+        let year = components.year ?? 0
+        let month = components.month ?? 0
+        return (year * 100) + month
+    }
+
     func moveMonth(by value: Int) {
         guard let nextMonth = calendar.date(byAdding: .month, value: value, to: displayedMonth) else {
             return

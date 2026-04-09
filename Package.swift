@@ -15,7 +15,10 @@ let package = Package(
     targets: [
         .target(
             name: "NovaDateRangeKit",
-            path: "Sources/NovaDateRangeKit"
+            path: "Sources/NovaDateRangeKit",
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "NovaDateRangeKitTests",

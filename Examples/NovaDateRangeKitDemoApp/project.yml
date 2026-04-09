@@ -1,0 +1,28 @@
+name: NovaDateRangeKitDemoApp
+options:
+  minimumXcodeGenVersion: 2.30.0
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+packages:
+  NovaDateRangeKit:
+    path: ../..
+targets:
+  NovaDateRangeKitDemoApp:
+    type: application
+    platform: iOS
+    deploymentTarget: '12.0'
+    sources:
+      - path: NovaDateRangeKitDemoApp
+    info:
+      path: NovaDateRangeKitDemoApp/Info.plist
+      properties:
+        CFBundleDisplayName: NovaDemo
+        UILaunchStoryboardName: ''
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sigit485.NovaDateRangeKitDemoApp
+        TARGETED_DEVICE_FAMILY: '1,2'
+    dependencies:
+      - package: NovaDateRangeKit
+        product: NovaDateRangeKit
