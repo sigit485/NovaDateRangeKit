@@ -1,4 +1,5 @@
 # NovaDateRangeKit
+![NovaDateRangeKit Icon](Assets/NovaDateRangeKitIcon-1024.png)
 
 A fully programmatic UIKit date-range picker component for iOS.
 
